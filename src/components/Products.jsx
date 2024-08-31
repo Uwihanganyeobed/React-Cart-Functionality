@@ -1,38 +1,66 @@
-import { useState, useEffect, useContext } from 'react'
-import { CartContext } from '../context/cart.jsx'
-import Cart from './Cart.jsx'
-
+import { useState, useEffect, useContext } from 'react';
+import { CartContext } from '../context/cart.jsx';
+import Cart from './Cart.jsx';
 
 export default function Products() {
-  const [showModal, setshowModal] = useState(false);
-  const [products, setProducts] = useState([])
-  const { cartItems, addToCart } = useContext(CartContext)
+  const [showModal, setShowModal] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const { cartItems, addToCart } = useContext(CartContext);
 
   const toggle = () => {
-    setshowModal(!showModal);
+    setShowModal(!showModal);
   };
 
   async function getProducts() {
-    const response = await fetch('https://dummyjson.com/products')
-    const data = await response.json()
-    setProducts(data.products)
+    const response = await fetch('https://dummyjson.com/products');
+    const data = await response.json();
+    setProducts(data.products);
+    setFilteredProducts(data.products); // Initialize filtered products
   }
 
   useEffect(() => {
-    getProducts()
-  }, [])
+    getProducts();
+  }, []);
+
+  // Update filtered products when search term changes
+  useEffect(() => {
+    setFilteredProducts(
+      products.filter((product) =>
+        product.title.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+  }, [searchTerm, products]);
 
   return (
     <div className='flex flex-col justify-center bg-gray-100'>
       <div className='flex justify-between items-center px-20 py-5'>
         <h1 className='text-2xl uppercase font-bold mt-10 text-center mb-10'>Shop</h1>
-        {!showModal && <button className='px-4 py-2 bg-gray-800 text-white text-xs font-bold uppercase rounded hover:bg-gray-700 focus:outline-none focus:bg-gray-700'
-          onClick={toggle}
-        >Cart ({cartItems.length})</button>}
+        {!showModal && (
+          <button
+            className='px-4 py-2 bg-gray-800 text-white text-xs font-bold uppercase rounded hover:bg-gray-700 focus:outline-none focus:bg-gray-700'
+            onClick={toggle}
+          >
+            Cart ({cartItems.length})
+          </button>
+        )}
       </div>
+
+      {/* Search Bar */}
+      <div className='px-20 mb-5'>
+        <input
+          type="text"
+          placeholder="Search products..."
+          className="w-full p-3 border border-gray-300 rounded"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
       <div className='grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-10'>
-        {
-          products.map(product => (
+        {filteredProducts.length > 0 ? (
+          filteredProducts.map((product) => (
             <div key={product.id} className='bg-white shadow-md rounded-lg px-10 py-10'>
               <img src={product.thumbnail} alt={product.title} className='rounded-md h-48' />
               <div className='mt-4'>
@@ -41,18 +69,21 @@ export default function Products() {
                 <p className='mt-2 text-gray-600'>${product.price}</p>
               </div>
               <div className='mt-6 flex justify-between items-center'>
-                <button className='px-4 py-2 bg-gray-800 text-white text-xs font-bold uppercase rounded hover:bg-gray-700 focus:outline-none focus:bg-gray-700'
-                  onClick={() => {
-                    addToCart(product)
-                  }
-                  }
-                >Add to cart</button>
+                <button
+                  className='px-4 py-2 bg-gray-800 text-white text-xs font-bold uppercase rounded hover:bg-gray-700 focus:outline-none focus:bg-gray-700'
+                  onClick={() => addToCart(product)}
+                >
+                  Add to cart
+                </button>
               </div>
             </div>
           ))
-        }
+        ) : (
+          <p className="text-center col-span-full text-gray-600">No products found</p>
+        )}
       </div>
+      
       <Cart showModal={showModal} toggle={toggle} />
     </div>
-  )
+  );
 }
