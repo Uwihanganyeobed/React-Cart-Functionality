@@ -7,6 +7,8 @@ export default function Products() {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedPriceRange, setSelectedPriceRange] = useState('');
   const { cartItems, addToCart } = useContext(CartContext);
 
   const toggle = () => {
@@ -24,14 +26,37 @@ export default function Products() {
     getProducts();
   }, []);
 
-  // Update filtered products when search term changes
+  const handleCategoryChange = (category) => {
+    if (selectedCategories.includes(category)) {
+      setSelectedCategories(selectedCategories.filter((c) => c !== category));
+    } else {
+      setSelectedCategories([...selectedCategories, category]);
+    }
+  };
+
+  const handlePriceRangeChange = (range) => {
+    setSelectedPriceRange(range);
+  };
+
   useEffect(() => {
     setFilteredProducts(
-      products.filter((product) =>
-        product.title.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      products.filter((product) => {
+        const matchesSearchTerm =
+          product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.price.toString().includes(searchTerm);
+
+        const matchesCategory =
+          selectedCategories.length === 0 || selectedCategories.includes(product.category);
+
+        const matchesPriceRange = !selectedPriceRange || (selectedPriceRange === 'under50' && product.price < 50) ||
+          (selectedPriceRange === '50to100' && product.price >= 50 && product.price <= 100) ||
+          (selectedPriceRange === 'above100' && product.price > 100);
+
+        return matchesSearchTerm && matchesCategory && matchesPriceRange;
+      })
     );
-  }, [searchTerm, products]);
+  }, [searchTerm, selectedCategories, selectedPriceRange, products]);
 
   return (
     <div className='flex flex-col justify-center bg-gray-100'>
@@ -51,11 +76,69 @@ export default function Products() {
       <div className='px-20 mb-5'>
         <input
           type="text"
-          placeholder="Search products..."
+          placeholder="Search products by title, description, or price..."
           className="w-full p-3 border border-gray-300 rounded"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+      </div>
+
+      {/* Filter Options */}
+      <div className='px-20 mb-5 flex justify-between'>
+        <div>
+          <h3 className='font-bold mb-2'>Filter by Category:</h3>
+          <div>
+            <label className='mr-4'>
+              <input
+                type="checkbox"
+                value="smartphones"
+                onChange={() => handleCategoryChange('smartphones')}
+              />
+              Smartphones
+            </label>
+            <label className='mr-4'>
+              <input
+                type="checkbox"
+                value="laptops"
+                onChange={() => handleCategoryChange('laptops')}
+              />
+              Laptops
+            </label>
+            {/* Add more categories as needed */}
+          </div>
+        </div>
+        <div>
+          <h3 className='font-bold mb-2'>Filter by Price Range:</h3>
+          <div>
+            <label className='mr-4'>
+              <input
+                type="radio"
+                name="priceRange"
+                value="under50"
+                onChange={() => handlePriceRangeChange('under50')}
+              />
+              Under $50
+            </label>
+            <label className='mr-4'>
+              <input
+                type="radio"
+                name="priceRange"
+                value="50to100"
+                onChange={() => handlePriceRangeChange('50to100')}
+              />
+              $50 - $100
+            </label>
+            <label className='mr-4'>
+              <input
+                type="radio"
+                name="priceRange"
+                value="above100"
+                onChange={() => handlePriceRangeChange('above100')}
+              />
+              Above $100
+            </label>
+          </div>
+        </div>
       </div>
 
       <div className='grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-10'>
